@@ -25,6 +25,7 @@ function App() {
   // const modelRotationRef = useRef({ x: 90, y: 180, z: 90 })
   const bakedModelRef = useRef(null)
   const leftRotRef = useRef({ x: -73, y: -8, z: 11 })
+  const rightRotRef = useRef({ x: -75, y: 2, z: 2 })
   const posOffsetRef = useRef({ x: 0, y: 0, z: 0 }) // gizmo (commented out below)
   const rightPosRef = useRef({ x: -0.010, y: -0.040, z: -0.025 })
   const leftPosRef  = useRef({ x:  0.000, y: -0.010, z: -0.015 })
@@ -34,6 +35,7 @@ function App() {
   const [modelStatus, setModelStatus] = useState('Model: loading...')
   // const [modelRot, setModelRot] = useState({ x: 90, y: 180, z: 90 })
   // const [leftRot, setLeftRot] = useState({ x: -73, y: -8, z: 11 })
+  // const [rightRot, setRightRot] = useState({ x: -75, y: 2, z: 2 })
   // const [posOffset, setPosOffset] = useState({ x: 0, y: 0, z: 0 })
 
   useEffect(() => {
@@ -338,25 +340,25 @@ function App() {
       toScenePoint(indexMcp, indexV)
       toScenePoint(pinkyMcp, pinkyV)
 
+      const handednessLabel = results?.handednesses?.[0]?.[0]?.categoryName
       const up = new THREE.Vector3().subVectors(palmV, wristV).normalize()
+      // For right hand the index→pinky direction is mirrored, so negate across
+      // to keep the normal pointing toward the camera for both hands.
       const across = new THREE.Vector3().subVectors(indexV, pinkyV).normalize()
+      if (handednessLabel === 'Right') across.negate()
       const normal = new THREE.Vector3().crossVectors(up, across).normalize()
       const tangent = new THREE.Vector3().crossVectors(normal, up).normalize()
 
       const rotM = new THREE.Matrix4().makeBasis(tangent, normal, up)
       watchGroup.quaternion.setFromRotationMatrix(rotM)
-      const handednessLabel = results?.handednesses?.[0]?.[0]?.categoryName
-      if (handednessLabel === 'Right') {
-        const rightHandFlip = new THREE.Quaternion().setFromAxisAngle(up, Math.PI)
-        watchGroup.quaternion.multiply(rightHandFlip)
-      }
       if (handednessLabel !== lastHandedness && bakedModelRef.current) {
         lastHandedness = handednessLabel
         if (handednessLabel === 'Right') {
+          const rr = rightRotRef.current
           bakedModelRef.current.rotation.set(
-            THREE.MathUtils.degToRad(-28),
-            THREE.MathUtils.degToRad(124),
-            THREE.MathUtils.degToRad(121),
+            THREE.MathUtils.degToRad(rr.x),
+            THREE.MathUtils.degToRad(rr.y),
+            THREE.MathUtils.degToRad(rr.z),
           )
         } else {
           const lr = leftRotRef.current
@@ -480,7 +482,20 @@ function App() {
     }
   }, [showSkeleton])
 
-  // const handleRotChange = (axis, value) => { ... } // right hand gizmo (commented)
+  // const handleRightRotChange = (axis, value) => {
+  //   const next = { ...rightRotRef.current, [axis]: Number(value) }
+  //   rightRotRef.current = next
+  //   setRightRot({ ...next })
+  //   if (bakedModelRef.current) {
+  //     bakedModelRef.current.rotation.set(
+  //       THREE.MathUtils.degToRad(next.x),
+  //       THREE.MathUtils.degToRad(next.y),
+  //       THREE.MathUtils.degToRad(next.z),
+  //     )
+  //   }
+  //   console.log(`Right hand rotation → X:${next.x}° Y:${next.y}° Z:${next.z}°`)
+  // }
+  // const handleRotChange = (axis, value) => { ... } // old right hand gizmo (commented)
 
   // const handlePosChange = (axis, value) => {
   //   const next = { ...posOffsetRef.current, [axis]: Number(value) }
@@ -523,17 +538,17 @@ function App() {
         </label>
       </div>
 
-      {/* Right hand gizmo — uncomment to re-enable
+      {/* Right hand rotation gizmo — uncomment to re-enable
       <div className="rotGizmo">
-        <p className="rotTitle">Model Rotation (Right)</p>
+        <p className="rotTitle">Right Hand Rotation</p>
         {['x', 'y', 'z'].map((axis) => (
           <label key={axis} className="rotRow">
-            <span>{axis.toUpperCase()} {modelRot[axis]}°</span>
-            <input type="range" min="-180" max="180" value={modelRot[axis]}
-              onChange={(e) => handleRotChange(axis, e.target.value)} />
+            <span>{axis.toUpperCase()} {rightRot[axis]}°</span>
+            <input type="range" min="-180" max="180" value={rightRot[axis]}
+              onChange={(e) => handleRightRotChange(axis, e.target.value)} />
           </label>
         ))}
-        <p className="rotValues">X:{modelRot.x}° Y:{modelRot.y}° Z:{modelRot.z}°</p>
+        <p className="rotValues">X:{rightRot.x}° Y:{rightRot.y}° Z:{rightRot.z}°</p>
       </div>
       */}
 
