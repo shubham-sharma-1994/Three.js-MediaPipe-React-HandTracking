@@ -1,0 +1,79 @@
+.app {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: radial-gradient(circle at top right, #1f3554 0%, #0b0f18 52%, #05070d 100%);
+}
+
+.videoFeed {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+  filter: saturate(1.08) contrast(1.03);
+}
+
+.watchLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.skeletonLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.watchLayer canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+.hud {
+  position: absolute;
+  z-index: 4;
+  left: 20px;
+  bottom: 20px;
+  color: #f3f7ff;
+  background: rgba(6, 11, 20, 0.66);
+  border: 1px solid rgba(161, 182, 220, 0.45);
+  border-radius: 8px;
+  padding: 12px 14px;
+  backdrop-filter: blur(8px);
+  max-width: min(420px, calc(100vw - 40px));
+}
+
+.hud h1 {
+  margin: 0;
+  font-size: clamp(1rem, 1.8vw, 1.3rem);
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.hud p {
+  margin: 6px 0 0;
+  font-size: 0.9rem;
+  color: #d0ddf8;
+}
+
+.toggleRow {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: #e8f1ff;
+}
+
+.toggleRow input {
+  width: 16px;
+  height: 16px;
+}
