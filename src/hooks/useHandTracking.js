@@ -23,19 +23,8 @@ export function useHandTracking({ videoRef, sceneHostRef, skeletonCanvasRef, sho
     const { scene, renderer, camera } = setupScene(host)
     const cleanupResize = setupResize(host, renderer, camera, skeletonCanvas)
 
-    const debugBox = new THREE.Mesh(
-      new THREE.BoxGeometry(0.28, 0.28, 0.28),
-      new THREE.MeshBasicMaterial({ color: 0x00ff66 }),
-    )
-    scene.add(debugBox)
-
     const watchGroup = new THREE.Group()
     watchGroup.visible = false
-    const groupMarker = new THREE.Mesh(
-      new THREE.SphereGeometry(0.055, 16, 16),
-      new THREE.MeshBasicMaterial({ color: 0xff3355 }),
-    )
-    watchGroup.add(groupMarker)
     scene.add(watchGroup)
 
     resetTracking()
@@ -48,8 +37,6 @@ export function useHandTracking({ videoRef, sceneHostRef, skeletonCanvasRef, sho
         bakedModel = model
         watchModelLoaded = true
         setModelStatus(statusOverride ?? `Model: loaded (${meshCount} meshes)`)
-        watchGroup.remove(groupMarker)
-        scene.remove(debugBox)
       },
       onError: (msg) => {
         setModelStatus(`Model: failed (${msg})`)
@@ -66,10 +53,6 @@ export function useHandTracking({ videoRef, sceneHostRef, skeletonCanvasRef, sho
       }
 
       renderer.render(scene, camera)
-      if (scene.children.includes(debugBox)) {
-        debugBox.rotation.x += 0.01
-        debugBox.rotation.y += 0.013
-      }
       animationFrameId = requestAnimationFrame(animate)
     }
 
