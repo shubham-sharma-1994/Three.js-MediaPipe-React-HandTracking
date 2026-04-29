@@ -10,17 +10,20 @@ const smoothScale    = { value: 0 }
 const smoothPosition = new THREE.Vector3()
 const smoothQuat     = new THREE.Quaternion()
 const targetQuat     = new THREE.Quaternion()
+const velocity       = new THREE.Vector3()
+const prevTarget     = new THREE.Vector3()
 let lastHandedness   = null
 let initialized      = false
 
-const POS_ALPHA  = 0.18
-const ROT_ALPHA  = 0.2
-const SCALE_ALPHA = 0.25
+const POS_ALPHA   = 0.45
+const ROT_ALPHA   = 0.5
+const SCALE_ALPHA = 0.35
 
 export function resetTracking() {
   smoothScale.value = 0
   lastHandedness = null
   initialized = false
+  velocity.set(0, 0, 0)
 }
 
 function toScenePoint(lm, out, camera) {
@@ -122,9 +125,14 @@ export function updateWatch({ results, watchGroup, bakedModel, camera, skeletonC
   if (!initialized) {
     smoothPosition.copy(targetPosition)
     smoothQuat.copy(targetQuat)
+    prevTarget.copy(targetPosition)
+    velocity.set(0, 0, 0)
     initialized = true
   } else {
-    smoothPosition.lerp(targetPosition, POS_ALPHA)
+    velocity.subVectors(targetPosition, prevTarget).multiplyScalar(0.4)
+    prevTarget.copy(targetPosition)
+    const predicted = targetPosition.clone().add(velocity)
+    smoothPosition.lerp(predicted, POS_ALPHA)
     smoothQuat.slerp(targetQuat, ROT_ALPHA)
   }
 
