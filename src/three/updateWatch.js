@@ -6,12 +6,21 @@ const palmV  = new THREE.Vector3()
 const indexV = new THREE.Vector3()
 const pinkyV = new THREE.Vector3()
 
-const smoothScale = { value: 0 }
-let lastHandedness = null
+const smoothScale    = { value: 0 }
+const smoothPosition = new THREE.Vector3()
+const smoothQuat     = new THREE.Quaternion()
+const targetQuat     = new THREE.Quaternion()
+let lastHandedness   = null
+let initialized      = false
+
+const POS_ALPHA  = 0.18
+const ROT_ALPHA  = 0.2
+const SCALE_ALPHA = 0.25
 
 export function resetTracking() {
   smoothScale.value = 0
   lastHandedness = null
+  initialized = false
 }
 
 function toScenePoint(lm, out, camera) {
@@ -53,6 +62,7 @@ export function updateWatch({ results, watchGroup, bakedModel, camera, skeletonC
 
   if (!watchModelLoaded || !landmarks) {
     watchGroup.visible = false
+    initialized = false
     return
   }
 
@@ -79,7 +89,7 @@ export function updateWatch({ results, watchGroup, bakedModel, camera, skeletonC
   const normal  = new THREE.Vector3().crossVectors(up, across).normalize()
   const tangent = new THREE.Vector3().crossVectors(normal, up).normalize()
 
-  watchGroup.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(tangent, normal, up))
+  targetQuat.setFromRotationMatrix(new THREE.Matrix4().makeBasis(tangent, normal, up))
 
   if (handedness !== lastHandedness && bakedModel) {
     lastHandedness = handedness
@@ -89,6 +99,7 @@ export function updateWatch({ results, watchGroup, bakedModel, camera, skeletonC
       THREE.MathUtils.degToRad(rot.y),
       THREE.MathUtils.degToRad(rot.z),
     )
+    initialized = false
   }
 
   const screenHandSize =
@@ -96,20 +107,29 @@ export function updateWatch({ results, watchGroup, bakedModel, camera, skeletonC
     Math.hypot(indexMcp.x - pinkyMcp.x, indexMcp.y - pinkyMcp.y) * 0.45
 
   const rawScale = screenHandSize * 2.14 * 4
-  smoothScale.value = smoothScale.value === 0 ? rawScale : smoothScale.value * 0.75 + rawScale * 0.25
-  const scale = smoothScale.value
+  smoothScale.value = smoothScale.value === 0 ? rawScale : smoothScale.value * (1 - SCALE_ALPHA) + rawScale * SCALE_ALPHA
 
   const wristToPalmDist = wristV.distanceTo(palmV)
-  watchGroup.scale.setScalar(scale)
-
   const pos = isRight ? HAND_POS.right : HAND_POS.left
-  const offset = up.clone().multiplyScalar(-0.2 * wristToPalmDist)
+  const targetPosition = wristV.clone()
+    .add(up.clone().multiplyScalar(-0.2 * wristToPalmDist))
     .add(normal.clone().multiplyScalar(0.12 * wristToPalmDist))
     .add(tangent.clone().multiplyScalar(pos.x))
     .add(normal.clone().multiplyScalar(pos.y))
     .add(up.clone().multiplyScalar(pos.z))
+  targetPosition.z = THREE.MathUtils.clamp(targetPosition.z, -1.0, 0.6)
 
-  watchGroup.position.copy(wristV).add(offset)
-  watchGroup.position.z = THREE.MathUtils.clamp(watchGroup.position.z, -1.0, 0.6)
+  if (!initialized) {
+    smoothPosition.copy(targetPosition)
+    smoothQuat.copy(targetQuat)
+    initialized = true
+  } else {
+    smoothPosition.lerp(targetPosition, POS_ALPHA)
+    smoothQuat.slerp(targetQuat, ROT_ALPHA)
+  }
+
+  watchGroup.position.copy(smoothPosition)
+  watchGroup.quaternion.copy(smoothQuat)
+  watchGroup.scale.setScalar(smoothScale.value)
   watchGroup.visible = true
 }
